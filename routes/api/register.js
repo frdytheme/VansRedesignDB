@@ -2,6 +2,7 @@ const express = require("express");
 const User = require("../../models/User");
 const router = express.Router();
 const bcrypt = require("bcryptjs");
+const jwt = require("jsonwebtoken");
 
 router.post("/", async (req, res) => {
   const { name, email, password } = req.body;
@@ -28,8 +29,23 @@ router.post("/", async (req, res) => {
     // 암호화된 내용까지 포함해 DB에 user를 저장.
     await user.save();
 
-    // 성공했다는 메시지를 응답으로 보냅니다.
-    res.send("Success");
+    // json web token 으로 변환할 데이터 정보
+    const payload = {
+      user: {
+        id: user.id,
+      },
+    };
+
+    // json web token 생성하여 send 해주기
+    jwt.sign(
+      payload, // 변환할 데이터
+      "jwtSecret", // secret key 값
+      { expiresIn: "1h" }, // token의 유효시간
+      (err, token) => {
+        if (err) throw err;
+        res.send({ token }); // token 값 response 해주기
+      }
+    );
   } catch (error) {
     console.error(error.message);
     res.status(500).send("Server Error");

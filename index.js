@@ -7,9 +7,15 @@ const port = 5000;
 
 app.use(express.json({ extended: true }));
 app.use("/api/register", require("./routes/api/register"));
+app.use("/api/postDB", require("./routes/api/postShoesDB"));
+app.use("/api/auth", require("./routes/api/auth"));
 
 app.get("/", (req, res) => {
   res.send("API running...");
+});
+
+app.get("/api/postDB", (req, res) => {
+  res.status(405).json({ error: "DB업데이트용 POST 경로입니다." });
 });
 
 connectDB();
