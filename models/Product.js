@@ -1,38 +1,37 @@
 const mongoose = require("mongoose");
 
-const productSchema = mongoose.Schema(
-  {
-    id: {
-      type: Number,
-      required: true,
-    },
-    model: {
-      type: String,
-      required: true,
-    },
-    name: {
-      type: String,
-      required: true,
-    },
-    category: {
-      type: String,
-      required: true,
-    },
-    price: {
-      type: String,
-      required: true,
-    },
-    color: {
-      type: String,
-      required: true,
-    },
+const productSchema = mongoose.Schema({
+  id: {
+    type: Number,
+    default: "Unknown Product",
+    required: true,
   },
-  // {
-  //   collection: function (doc) {
-  //     return doc.category;
-  //   },
-  // }
-);
+  model: {
+    type: String,
+    default: "Unknown Product",
+    required: true,
+  },
+  name: {
+    type: String,
+    default: "Unknown Product",
+    required: true,
+  },
+  category: {
+    type: String,
+    default: "Unknown Product",
+    required: true,
+  },
+  price: {
+    type: String,
+    default: "Unknown Product",
+    required: true,
+  },
+  color: {
+    type: String,
+    default: "Unknown Product",
+    required: true,
+  },
+});
 
 const Product = mongoose.model("Product", productSchema);
 module.exports = Product;
