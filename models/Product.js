@@ -2,7 +2,7 @@ const mongoose = require("mongoose");
 
 const productSchema = mongoose.Schema({
   id: {
-    type: Number,
+    type: String,
     default: "Unknown Product",
     required: true,
   },
@@ -31,6 +31,11 @@ const productSchema = mongoose.Schema({
     default: "Unknown Product",
     required: true,
   },
+  date: {
+    type: Date,
+    default: Date.now,
+    required: true,
+  }
 });
 
 const Product = mongoose.model("Product", productSchema);

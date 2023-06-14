@@ -1,21 +1,21 @@
 const express = require("express");
 const Product = require("../../models/Product");
 const router = express.Router();
-const data = require("../../db/product");
-const mongoose = require("mongoose");
 const getId = require("../../middleware/getId");
+const mongoose = require("mongoose");
 
 router.get("/", async (req, res) => {
-  const { searchId, searchModel } = req.query;
+  const { id, name, color, price, model, category } = req.query;
+  const query = {};
+
+  if (id) query.id = id;
+  if (name) query.name = name;
+  if (color) query.color = color;
+  if (price) query.price = price;
+  if (model) query.model = model;
+  if (category) query.category = category;
   try {
-    let product;
-    if (searchId) {
-      product = await Product.find({ id: searchId });
-    } else if(searchModel) {
-      product = await Product.find({ model: searchModel });
-    } else {
-      product = await Product.find();
-    }
+    const product = await Product.find(query);
     res.json(product);
   } catch (error) {
     res.status(500).json({ msg: error.message });
@@ -38,16 +38,25 @@ router.post("/", async (req, res) => {
   try {
     const newProduct = await product.save();
     res.status(201).json(newProduct);
-    // for (const item of data) {
-    //   const model = await Product.findOne({ model: item.model });
-    //   if (model) {
-    //     return res.status(400).json({ errors: [{ msg: "Product already exists" }] });
-    //   }
-    //   const newItem = new Product(item);
-    //   await newItem.save();
-    // }
   } catch (error) {
     res.status(500).json({ error: error.message });
+  }
+});
+
+router.post("/update-date", async (req, res) => {
+  const oneDayAgo = new Date();
+  oneDayAgo.setDate(oneDayAgo.getDate() - 7);
+  try {
+    const products = await Product.find();
+    for (const item of products) {
+      item.date = oneDayAgo;
+      await item.save();
+    }
+    res.status(200).json({ msg: "Update Successfully" });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  } finally {
+    res.end();
   }
 });
 
