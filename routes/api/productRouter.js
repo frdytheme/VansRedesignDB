@@ -3,20 +3,34 @@ const Product = require("../../models/Product");
 const router = express.Router();
 const getId = require("../../middleware/getId");
 const mongoose = require("mongoose");
+const productData = require("../../db/product");
 
 router.get("/", async (req, res) => {
-  const { id, name, color, price, model, category } = req.query;
+  const { page = 1, pageSize = 25, id, name, color, price, model, category } = req.query;
+  const skipCount = (page - 1) * pageSize;
   const query = {};
 
   if (id) query.id = id;
   if (name) query.name = name;
-  if (color) query.color = color;
-  if (price) query.price = price;
-  if (model) query.model = model;
-  if (category) query.category = category;
+  if (color) query.color = { $in: color.split(",") };
+  if (price) {
+    const priceArr = price.split(",");
+    let minPrice = parseInt(priceArr[0], 10);
+    let maxPrice = parseInt(priceArr[1], 10);
+    query.price = { $gte: minPrice, $lte: maxPrice };
+  }
+  if (model) query.model = { $in: model.split(",") };
+  if (category) query.category = { $in: category.split(",") };
   try {
-    const product = await Product.find(query);
-    res.json(product);
+    const productCount = await Product.countDocuments(query);
+    const products = await Product.find(query).skip(skipCount).limit(Number(pageSize));
+    res.json({
+      total: productCount,
+      page: Number(page),
+      pageSize: Number(pageSize),
+      totalPages: Math.ceil(productCount / Number(pageSize)),
+      products: products,
+    });
   } catch (error) {
     res.status(500).json({ msg: error.message });
   }

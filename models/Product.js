@@ -22,8 +22,8 @@ const productSchema = mongoose.Schema({
     required: true,
   },
   price: {
-    type: String,
-    default: "Unknown Product",
+    type: Number,
+    default: 0,
     required: true,
   },
   color: {
