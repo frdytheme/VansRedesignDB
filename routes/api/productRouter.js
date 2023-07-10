@@ -2,8 +2,6 @@ const express = require("express");
 const Product = require("../../models/Product");
 const router = express.Router();
 const getId = require("../../middleware/getId");
-const mongoose = require("mongoose");
-const productData = require("../../db/product");
 
 router.get("/", async (req, res) => {
   const { page = 1, pageSize = 25, id, name, color, price, model, category } = req.query;
