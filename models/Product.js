@@ -31,6 +31,11 @@ const productSchema = mongoose.Schema({
     default: "Unknown Product",
     required: true,
   },
+  size: {
+    type: Object,
+    required: true,
+  },
+
   date: {
     type: Date,
     default: Date.now,
