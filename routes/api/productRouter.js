@@ -4,7 +4,7 @@ const router = express.Router();
 const getId = require("../../middleware/getId");
 
 router.get("/", async (req, res) => {
-  const { page = 1, pageSize = 25, id, name, color, price, model, category, size } = req.query;
+  const { page = 1, pageSize = 25, id, name, color, price, model, category, size, all } = req.query;
   const skipCount = (page - 1) * pageSize;
   const query = {};
 
@@ -18,12 +18,27 @@ router.get("/", async (req, res) => {
     query.price = { $gte: minPrice, $lte: maxPrice };
   }
   if (model) query.model = { $in: model.split(",") };
-  if (category) query.category = { $in: category.split(",") };
-  if (size) query.size = { $elemMatch: { $in : size.split(",")}, $exists: true };
+  if (category) {
+    const categoryArr = category.split(",");
+    query.category = { $in: categoryArr.map((item) => new RegExp(item, "i")) };
+  }
+  if (size) {
+    const sizeArr = size.split(",");
+    query.$or = sizeArr.map((size) => ({
+      [`size.${size}`]: { $gte: 1 },
+    }));
+  }
+  /*
+    size 필드 조회 :
+    객체 필드를 조회하며 전달받은 텍스트를 키로 가진 요소 중 값(수량)이 1 이상을 만족하면 반환.
+    $or 연산자를 사용해서 하나의 조건이라도 만족하면 반환.
+  */
 
   try {
     const productCount = await Product.countDocuments(query);
-    const products = await Product.find(query).skip(skipCount).limit(Number(pageSize));
+    const products = all
+      ? await Product.find(query)
+      : await Product.find(query).skip(skipCount).limit(Number(pageSize));
     res.json({
       total: productCount,
       page: Number(page),
@@ -48,12 +63,28 @@ router.post("/", async (req, res) => {
     category: req.body.category,
     price: req.body.price,
     color: req.body.color,
+    size: req.body.size,
   });
   try {
     const newProduct = await product.save();
     res.status(201).json(newProduct);
   } catch (error) {
     res.status(500).json({ error: error.message });
+  }
+});
+
+router.post("/update-data", async (req, res) => {
+  try {
+    const products = await Product.find({ category: { $regex: "탑" } });
+    for (const item of products) {
+      item.category = "탑&티셔츠";
+      await item.save();
+    }
+    res.status(200).json(products);
+  } catch (err) {
+    console.error(err);
+  } finally {
+    res.end();
   }
 });
 
@@ -74,91 +105,91 @@ router.post("/", async (req, res) => {
 //   }
 // });
 
-router.post("/update-size", async (req, res) => {
-  const shoesSize = {
-    210: 1,
-    215: 1,
-    220: 1,
-    225: 1,
-    230: 1,
-    235: 1,
-    240: 1,
-    245: 1,
-    250: 1,
-    255: 1,
-    260: 1,
-    265: 1,
-    270: 1,
-    275: 1,
-    280: 1,
-    285: 1,
-    290: 1,
-    295: 1,
-    300: 1,
-    310: 1,
-  };
-  const clothSize = {
-    XS: 1,
-    S: 1,
-    M: 1,
-    L: 1,
-    XL: 1,
-    XXL: 1,
-  };
-  const bottomSize = {
-    25: 1,
-    26: 1,
-    27: 1,
-    28: 1,
-    29: 1,
-    30: 1,
-    31: 1,
-    32: 1,
-    33: 1,
-    34: 1,
-    36: 1,
-  };
-  const kidSize = {
-    4: 1,
-    5: 1,
-    6: 1,
-    7: 1,
-    8: 1,
-    9: 1,
-    10: 1,
-  };
-  const free = {
-    FREE: 1,
-  };
-  try {
-    const products = await Product.find();
-    for (const item of products) {
-      if (item.category === "키즈" || item.category === "토들러") {
-        item.size = kidSize;
-      } else if (item.category === "탑 & 티셔츠" || item.category === "플리스" || item.category === "아우터") {
-        item.size = clothSize;
-      } else if (item.category === "하의") {
-        item.size = bottomSize;
-      } else if (
-        item.category === "양말" ||
-        item.category === "모자" ||
-        item.category === "벨트" ||
-        item.category === "가방" ||
-        item.category === "기타"
-      ) {
-        item.size = free;
-      } else {
-        item.size = shoesSize;
-      }
-      await item.save();
-    }
-    res.status(200).json({ msg: "Update Successfully" });
-  } catch (error) {
-    res.status(500).json({ error: error.message });
-  } finally {
-    res.end();
-  }
-});
+// router.post("/update-size", async (req, res) => {
+//   const shoesSize = {
+//     210: 1,
+//     215: 1,
+//     220: 1,
+//     225: 1,
+//     230: 1,
+//     235: 1,
+//     240: 1,
+//     245: 1,
+//     250: 1,
+//     255: 1,
+//     260: 1,
+//     265: 1,
+//     270: 1,
+//     275: 1,
+//     280: 1,
+//     285: 1,
+//     290: 1,
+//     295: 1,
+//     300: 1,
+//     310: 1,
+//   };
+//   const clothSize = {
+//     XS: 1,
+//     S: 1,
+//     M: 1,
+//     L: 1,
+//     XL: 1,
+//     XXL: 1,
+//   };
+//   const bottomSize = {
+//     25: 1,
+//     26: 1,
+//     27: 1,
+//     28: 1,
+//     29: 1,
+//     30: 1,
+//     31: 1,
+//     32: 1,
+//     33: 1,
+//     34: 1,
+//     36: 1,
+//   };
+//   const kidSize = {
+//     4: 1,
+//     5: 1,
+//     6: 1,
+//     7: 1,
+//     8: 1,
+//     9: 1,
+//     10: 1,
+//   };
+//   const free = {
+//     FREE: 1,
+//   };
+//   try {
+//     const products = await Product.find();
+//     for (const item of products) {
+//       if (item.category === "키즈" || item.category === "토들러") {
+//         item.size = kidSize;
+//       } else if (item.category === "탑 & 티셔츠" || item.category === "플리스" || item.category === "아우터") {
+//         item.size = clothSize;
+//       } else if (item.category === "하의") {
+//         item.size = bottomSize;
+//       } else if (
+//         item.category === "양말" ||
+//         item.category === "모자" ||
+//         item.category === "벨트" ||
+//         item.category === "가방" ||
+//         item.category === "기타"
+//       ) {
+//         item.size = free;
+//       } else {
+//         item.size = shoesSize;
+//       }
+//       await item.save();
+//     }
+//     res.status(200).json({ msg: "Update Successfully" });
+//   } catch (error) {
+//     res.status(500).json({ error: error.message });
+//   } finally {
+//     res.end();
+//   }
+// });
 
 router.patch("/:id", getId, async (req, res) => {
   if (req.body.category != null) {
