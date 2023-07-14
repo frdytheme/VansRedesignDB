@@ -16,6 +16,11 @@ const productSchema = mongoose.Schema({
     default: "Unknown Product",
     required: true,
   },
+  mainCategory: {
+    type: Array,
+    default: ["ALL"],
+    required: true,
+  },
   category: {
     type: String,
     default: "Unknown Product",
@@ -33,9 +38,9 @@ const productSchema = mongoose.Schema({
   },
   size: {
     type: Object,
+    default: {},
     required: true,
   },
-
   date: {
     type: Date,
     default: Date.now,

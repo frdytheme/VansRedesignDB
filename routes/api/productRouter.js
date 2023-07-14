@@ -4,7 +4,7 @@ const router = express.Router();
 const getId = require("../../middleware/getId");
 
 router.get("/", async (req, res) => {
-  const { page = 1, pageSize = 25, id, name, color, price, model, category, size, all } = req.query;
+  const { page = 1, pageSize = 25, id, name, color, price, model, category, size, all, mainCategory } = req.query;
   const skipCount = (page - 1) * pageSize;
   const query = {};
 
@@ -33,6 +33,9 @@ router.get("/", async (req, res) => {
     객체 필드를 조회하며 전달받은 텍스트를 키로 가진 요소 중 값(수량)이 1 이상을 만족하면 반환.
     $or 연산자를 사용해서 하나의 조건이라도 만족하면 반환.
   */
+  if (mainCategory) {
+    query.mainCategory = { $in: [mainCategory] };
+  }
 
   try {
     const productCount = await Product.countDocuments(query);
@@ -60,6 +63,7 @@ router.post("/", async (req, res) => {
     id: req.body.id,
     model: req.body.model,
     name: req.body.name,
+    mainCategory: req.body.mainCategory,
     category: req.body.category,
     price: req.body.price,
     color: req.body.color,
@@ -75,12 +79,15 @@ router.post("/", async (req, res) => {
 
 router.post("/update-data", async (req, res) => {
   try {
-    const products = await Product.find({ category: { $regex: "탑" } });
+    const products = await Product.find({category: {$in: ["키즈", "토들러"]}});
     for (const item of products) {
-      item.category = "탑&티셔츠";
+      item.mainCategory = [...item.mainCategory, "KIDS"];
       await item.save();
     }
-    res.status(200).json(products);
+    res.json({
+      total: products.length,
+      products: products,
+    });
   } catch (err) {
     console.error(err);
   } finally {
@@ -88,22 +95,25 @@ router.post("/update-data", async (req, res) => {
   }
 });
 
-// router.post("/update-date", async (req, res) => {
-//   const oneDayAgo = new Date();
-//   oneDayAgo.setDate(oneDayAgo.getDate() - 7);
-//   try {
-//     const products = await Product.find();
-//     for (const item of products) {
-//       item.date = oneDayAgo;
-//       await item.save();
-//     }
-//     res.status(200).json({ msg: "Update Successfully" });
-//   } catch (error) {
-//     res.status(500).json({ error: error.message });
-//   } finally {
-//     res.end();
-//   }
-// });
+router.post("/update-date", async (req, res) => {
+  const oneDayAgo = new Date();
+  oneDayAgo.setDate(oneDayAgo.getDate() - 31);
+  try {
+    const products = await Product.find({ date: { $gt: oneDayAgo } });
+    for (const item of products) {
+      item.mainCategory.push("NEW");
+      await item.save();
+    }
+    res.json({
+      total: products.length,
+      products: products,
+    });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  } finally {
+    res.end();
+  }
+});
 
 // router.post("/update-size", async (req, res) => {
 //   const shoesSize = {
