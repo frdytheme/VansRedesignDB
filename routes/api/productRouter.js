@@ -9,7 +9,7 @@ router.get("/", async (req, res) => {
   const query = {};
 
   if (id) query.id = id;
-  if (name) query.name = name;
+  if (name) query.name = { $regex: name };
   if (color) query.color = { $in: color.split(",") };
   if (price) {
     const priceArr = price.split(",");
@@ -34,7 +34,7 @@ router.get("/", async (req, res) => {
     $or 연산자를 사용해서 하나의 조건이라도 만족하면 반환.
   */
   if (mainCategory) {
-    query.mainCategory = { $in: [mainCategory] };
+    query.mainCategory = { $all: mainCategory.split(",")};
   }
 
   try {
@@ -78,10 +78,14 @@ router.post("/", async (req, res) => {
 });
 
 router.post("/update-data", async (req, res) => {
+  const { name, mainCategory, category } = req.query;
+  const query = {};
+  if (name) query.name = { $regex: name };
+  if (category) query.category = { $regex: category };
   try {
-    const products = await Product.find({category: {$in: ["키즈", "토들러"]}});
+    const products = await Product.find(query);
     for (const item of products) {
-      item.mainCategory = [...item.mainCategory, "KIDS"];
+      item.mainCategory = [...item.mainCategory, item.category];
       await item.save();
     }
     res.json({
@@ -97,9 +101,9 @@ router.post("/update-data", async (req, res) => {
 
 router.post("/update-date", async (req, res) => {
   const oneDayAgo = new Date();
-  oneDayAgo.setDate(oneDayAgo.getDate() - 31);
+  oneDayAgo.setDate(oneDayAgo.getDate() - 40);
   try {
-    const products = await Product.find({ date: { $gt: oneDayAgo } });
+    const products = await Product.find({ date: { $gt: oneDayAgo }, mainCategory: { $regex: "CLOTHES" } });
     for (const item of products) {
       item.mainCategory.push("NEW");
       await item.save();
