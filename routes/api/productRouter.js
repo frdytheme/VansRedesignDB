@@ -34,7 +34,7 @@ router.get("/", async (req, res) => {
     $or 연산자를 사용해서 하나의 조건이라도 만족하면 반환.
   */
   if (mainCategory) {
-    query.mainCategory = { $all: mainCategory.split(",")};
+    query.mainCategory = { $all: mainCategory.split(",") };
   }
 
   try {
@@ -85,7 +85,7 @@ router.post("/update-data", async (req, res) => {
   try {
     const products = await Product.find(query);
     for (const item of products) {
-      item.mainCategory = [...item.mainCategory, item.category];
+      item.mainCategory = [...item.mainCategory, "Authentic"];
       await item.save();
     }
     res.json({
