@@ -4,18 +4,19 @@ const router = express.Router();
 const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
 
+// 회원가입 라우터
 router.post("/", async (req, res) => {
   const { name, email, password } = req.body;
 
   try {
-    // email을 비교해서 user가 이미 존재하는지 확인
+    // name을 비교해서 user가 이미 존재하는지 확인
     // 존재한다면 return해서 뒤의 코드를 실행하지 않음.
-    let user = await User.findOne({ email });
+    let user = await User.findOne({ name });
     if (user) {
-      return res.status(400).json({ errors: [{ msg: "User already exists" }] });
+      return res.status(400).json({ errors: [{ msg: "동일한 아이디가 존재합니다." }] });
     }
 
-    // user가 존재하지 않으면 새로운 user에 대해서 DB에 추가
+    // 새로운 user에 대해서 DB에 추가
     user = new User({
       name,
       email,
@@ -29,23 +30,7 @@ router.post("/", async (req, res) => {
     // 암호화된 내용까지 포함해 DB에 user를 저장.
     await user.save();
 
-    // json web token 으로 변환할 데이터 정보
-    const payload = {
-      user: {
-        id: user.id,
-      },
-    };
-
-    // json web token 생성하여 send 해주기
-    jwt.sign(
-      payload, // 변환할 데이터
-      "jwtSecret", // secret key 값
-      { expiresIn: "1h" }, // token의 유효시간
-      (err, token) => {
-        if (err) throw err;
-        res.send({ token }); // token 값 response 해주기
-      }
-    );
+    res.json(user);
   } catch (error) {
     console.error(error.message);
     res.status(500).send("Server Error");

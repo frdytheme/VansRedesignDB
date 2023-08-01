@@ -2,7 +2,6 @@ const express = require("express");
 const router = express.Router();
 const auth = require("../../middleware/auth"); // middleware 불러오기
 const User = require("../../models/User");
-const jwt = require("jsonwebtoken");
 
 // localhost:5000/api/auth 로 GET 방식으로 들어왔을 때
 router.get("/", auth, async (req, res) => {
