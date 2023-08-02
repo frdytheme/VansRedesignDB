@@ -5,7 +5,7 @@ module.exports = function (req, res, next) {
   // Get token from header
   // header에서 x-auth-token 은 token의 key 값
   // token에는 JWT가 들어갑니다.
-  const token = req.header("x-auth-token");
+  const token = req.header("Authorization");
 
   // 토큰이 아니라면,
   if (!token) {
@@ -16,7 +16,7 @@ module.exports = function (req, res, next) {
   try {
     // token 해독
     // token을 만들 때 설정한 secret key 값 : jwtSecret
-    const decoded = jwt.verify(token, "jwtSecret");
+    const decoded = jwt.verify(token, "accessCoin");
     // req에 해독한 user 정보 생성
     req.user = decoded.user;
     // 미들웨어에서 많이 사용하는 메서드로 현재에서 판단하지 않고 라우터로 넘기겠다는 의미입니다.
