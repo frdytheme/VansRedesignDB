@@ -31,8 +31,6 @@ router.post("/", async (req, res) => {
     };
 
     // jwt토큰 생성
-
-    // 1. access토큰 생성
     jwt.sign(
       payload, // 변환할 데이터
       "accessCoin", // secret key 값
@@ -40,30 +38,21 @@ router.post("/", async (req, res) => {
       (err, accessToken) => {
         if (err) throw err;
 
-        jwt.sign(
-          payload,
-          "refreshCoin",
-          { expiresIn: "7d" },
-          (err, refreshToken) => {
-            if (err) throw err;
-
-            res.cookie("access_token", accessToken, {
-              httpOnly: true,
-              secure: false,
-              maxAge: 15 * 60 * 1000,
-            });
-
-            res.cookie("refresh_token", refreshToken, {
-              httpOnly: true,
-              secure: false,
-              maxAge: 7 * 24 * 60 * 60 * 1000,
-            });
-          }
-        );
-
-        res.json({ message: "로그인 완료" });
+        res.cookie("access_token", accessToken, {
+          // httpOnly: true,
+          domain: "localhost",
+          sameSite: "none",
+          secure: true,
+          maxAge: 15 * 60 * 1000,
+        });
       }
     );
+
+    // const accessToken = jwt.sign(payload, "accessCoin", { expiresIn: "15m" });
+    // const refreshToken = jwt.sign(payload, "refreshCoin", { expiresIn: "7d" });
+
+    // res.json({ message: "로그인 완료", accessToken, refreshToken });
+    res.json({ message: "로그인 완료" });
   } catch (err) {
     res.status(500).send("사용자 인증 실패");
   }

@@ -2,6 +2,9 @@
 const express = require("express");
 const connectDB = require("./db");
 const cors = require("cors");
+const http = require("http");
+const https = require("https");
+const fs = require("fs");
 //express 사용
 const app = express();
 const port = 5000;
@@ -28,9 +31,18 @@ app.delete("/", (req, res) => {
 
 connectDB();
 
-/**
- * @path {GET} http://localhost:5000/
- * @description index.js 로컬 경로
- */
+const httpsOptions = {
+  key: fs.readFileSync("localhost-key.pem"),
+  cert: fs.readFileSync("localhost.pem"),
+};
 
-app.listen(port, () => console.log(`Server started on port ${port}`));
+const httpsPort = 443;
+
+const httpServer = http.createServer(app);
+const httpsServer = https.createServer(httpsOptions, app);
+
+// app.listen(port, () => console.log(`Server started on port ${port}`));
+httpServer.listen(port, () => console.log(`Server started on port ${port}`));
+httpsServer.listen(httpsPort, () =>
+  console.log(`Server started on port ${httpsPort}`)
+);
