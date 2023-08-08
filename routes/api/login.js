@@ -3,6 +3,7 @@ const User = require("../../models/User");
 const router = express.Router();
 const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
+require("dotenv").config();
 
 // 로그인 라우터
 router.post("/", async (req, res) => {
@@ -31,22 +32,31 @@ router.post("/", async (req, res) => {
     };
 
     // jwt토큰 생성
-    jwt.sign(
-      payload, // 변환할 데이터
-      "accessCoin", // secret key 값
-      { expiresIn: "15m" }, // token의 유효시간
-      (err, accessToken) => {
-        if (err) throw err;
+    const accessToken = jwt.sign(payload, process.env.JWT_SECRET, {
+      expiresIn: "15m",
+    });
 
-        res.cookie("access_token", accessToken, {
-          // httpOnly: true,
-          domain: "localhost",
-          sameSite: "none",
-          secure: true,
-          maxAge: 15 * 60 * 1000,
-        });
-      }
-    );
+    res.cookie("access_token", accessToken, {
+      httpOnly: true,
+      sameSite: "none",
+      domain: "localhost",
+      path: "/",
+      secure: true,
+      maxAge: 15 * 60 * 1000,
+    });
+
+    const refreshToken = jwt.sign(payload, process.env.JWT_SECRET_REFRESH, {
+      expiresIn: "14d",
+    });
+
+    res.cookie("refresh_token", refreshToken, {
+      httpOnly: true,
+      sameSite: "none",
+      domain: "localhost",
+      path: "/",
+      secure: true,
+      maxAge: 14 * 24 * 60 * 60 * 1000,
+    });
 
     // const accessToken = jwt.sign(payload, "accessCoin", { expiresIn: "15m" });
     // const refreshToken = jwt.sign(payload, "refreshCoin", { expiresIn: "7d" });
@@ -54,8 +64,21 @@ router.post("/", async (req, res) => {
     // res.json({ message: "로그인 완료", accessToken, refreshToken });
     res.json({ message: "로그인 완료" });
   } catch (err) {
-    res.status(500).send("사용자 인증 실패");
+    res.status(401).send("사용자 인증 실패");
   }
 });
 
 module.exports = router;
+
+
+
+/*
+
+  1. 사용자 최초 로그인 시 access token과 refresh token 발급
+  2. access token은 만료 기간이 짧다 (15분). 즉 탈취당해도 15분의 짧은 시간만 유효하기 때문에 피해를 줄일 수 있음.
+  3. refresh token은 만료 기간이 길며 (예, 14일) 쿠키 혹은 DB에 저장한다.
+  4. access token이 만료되면 사용자는 15분마다 로그인을 할 필요 없이, 발급받았던 refresh token을 사용해 access token을 갱신한다.
+
+  즉 access token은 휘발성 정보로 15분마다 새롭게 갱신되고 refresh token은 유효한 access token을 재발급해주므로 보안성이 중요.
+
+*/

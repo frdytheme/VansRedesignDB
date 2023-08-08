@@ -2,14 +2,21 @@
 const express = require("express");
 const connectDB = require("./db");
 const cors = require("cors");
-const http = require("http");
-const https = require("https");
-const fs = require("fs");
+const cookieParser = require("cookie-parser");
+
 //express 사용
 const app = express();
 const port = 5000;
 
-app.use(cors());
+app.use(
+  cors({
+    origin: "http://localhost:3000", // 허용할 도메인 주소
+    credentials: true, // 쿠키 전달을 허용
+  })
+);
+
+app.use(cookieParser());
+
 app.use(express.json({ extended: true }));
 app.use("/api/register", require("./routes/api/register"));
 app.use("/api/product", require("./routes/api/productRouter"));
@@ -31,18 +38,4 @@ app.delete("/", (req, res) => {
 
 connectDB();
 
-const httpsOptions = {
-  key: fs.readFileSync("localhost-key.pem"),
-  cert: fs.readFileSync("localhost.pem"),
-};
-
-const httpsPort = 443;
-
-const httpServer = http.createServer(app);
-const httpsServer = https.createServer(httpsOptions, app);
-
-// app.listen(port, () => console.log(`Server started on port ${port}`));
-httpServer.listen(port, () => console.log(`Server started on port ${port}`));
-httpsServer.listen(httpsPort, () =>
-  console.log(`Server started on port ${httpsPort}`)
-);
+app.listen(port, () => console.log(`Server started on port ${port}`));
