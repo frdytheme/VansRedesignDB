@@ -16,6 +16,7 @@ router.post("/", async (req, res) => {
       return res.status(400).json({ errors: [{ msg: "동일한 아이디가 존재합니다." }] });
     }
 
+
     // 새로운 user에 대해서 DB에 추가
     user = new User({
       name,
@@ -34,6 +35,20 @@ router.post("/", async (req, res) => {
   } catch (error) {
     console.error(error.message);
     res.status(500).send("Server Error");
+  }
+});
+
+router.post("/idCheck", async (req, res) => {
+  const { name } = req.body;
+  try {
+    let user = await User.findOne({ name });
+    if (!user) {
+      res.status(200).send({ isOnly: true });
+    } else {
+      res.status(200).send({ isOnly: false });
+    }
+  } catch (err) {
+    res.status(401).send("서버 오류");
   }
 });
 

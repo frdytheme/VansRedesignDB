@@ -70,8 +70,6 @@ router.post("/", async (req, res) => {
 
 module.exports = router;
 
-
-
 /*
 
   1. 사용자 최초 로그인 시 access token과 refresh token 발급
@@ -80,5 +78,7 @@ module.exports = router;
   4. access token이 만료되면 사용자는 15분마다 로그인을 할 필요 없이, 발급받았던 refresh token을 사용해 access token을 갱신한다.
 
   즉 access token은 휘발성 정보로 15분마다 새롭게 갱신되고 refresh token은 유효한 access token을 재발급해주므로 보안성이 중요.
+
+
 
 */
