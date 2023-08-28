@@ -13,9 +13,10 @@ router.post("/", async (req, res) => {
     // 존재한다면 return해서 뒤의 코드를 실행하지 않음.
     let user = await User.findOne({ name });
     if (user) {
-      return res.status(400).json({ errors: [{ msg: "동일한 아이디가 존재합니다." }] });
+      return res
+        .status(400)
+        .json({ errors: [{ msg: "동일한 아이디가 존재합니다." }] });
     }
-
 
     // 새로운 user에 대해서 DB에 추가
     user = new User({
