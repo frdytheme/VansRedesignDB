@@ -9,6 +9,7 @@ const nodemailer = require("nodemailer");
 
 require("dotenv").config();
 
+// 익스프레스 세션 설정
 router.use(
   session({
     secret: process.env.SESSION_SECRET,
@@ -151,12 +152,11 @@ router.post("/idCheck", async (req, res) => {
   }
 });
 
-let number;
 // 이메일 인증 라우터
 router.post("/emailAuth", async (req, res) => {
   const { email } = req.body;
 
-  number = Math.floor(Math.random() * 900000 + 100000);
+  let number = Math.floor(Math.random() * 900000 + 100000);
 
   const auth = jwt.sign(number, process.env.JWT_SECRET_AUTH);
 

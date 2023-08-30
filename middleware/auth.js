@@ -4,17 +4,13 @@ const User = require("../models/User");
 require("dotenv").config();
 
 module.exports = async function (req, res, next) {
-  // Get token from header
-  // header에서 x-auth-token 은 token의 key 값
-  // token에는 JWT가 들어갑니다.
-  // cookieParser()(req, res, () => {});
 
   const accessToken = req.cookies.access_token;
   const refreshToken = req.cookies.refresh_token;
   const { name } = req.body;
 
   try {
-    // 토큰이 아니라면, 유저 아이디를 db에 검색해 동일한 리프레시 토큰을 갖고 있는 지 확인.
+    // 액세스 토큰이 없으면, 유저 아이디를 db에 검색해 동일한 리프레시 토큰을 갖고 있는 지 확인.
     if (!accessToken) {
       const user = await User.findOne({ name: name });
       // 동일한 리프레시 토큰이라면, 액세스 토큰과 리프레시 토큰 모두 갱신.
@@ -52,7 +48,7 @@ module.exports = async function (req, res, next) {
 
         user.refresh = refreshToken;
         await user.save();
-        // 두 토큰이 모두 만료되었을 시 로그인 정보 만료, 유저db의 refresh 필드 삭제.
+        // 리프레시 토큰이 만료되었거나 기존 토큰과 다를 시 로그인 정보 만료, 유저db의 refresh 필드 삭제.
       } else {
         await User.updateOne({ name: name }, { $unset: { refresh: 1 } });
         return res.status(401).json({ msg: "로그인 정보가 만료되었습니다." });
