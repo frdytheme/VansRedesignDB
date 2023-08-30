@@ -1,12 +1,24 @@
 const express = require("express");
 const User = require("../../models/User");
 const router = express.Router();
+const session = require("express-session");
 const auth = require("../../middleware/auth"); // middleware
 const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
 const nodemailer = require("nodemailer");
 
 require("dotenv").config();
+
+router.use(
+  session({
+    secret: process.env.SESSION_SECRET,
+    resave: false,
+    saveUninitialized: true,
+    cookie: {
+      maxAge: 120000,
+    },
+  })
+);
 
 // 로그인 라우터
 router.post("/login", async (req, res) => {
@@ -146,6 +158,11 @@ router.post("/emailAuth", async (req, res) => {
 
   number = Math.floor(Math.random() * 900000 + 100000);
 
+  const auth = jwt.sign(number, process.env.JWT_SECRET_AUTH);
+
+  req.session.auth = auth;
+
+  // nodemailer 이메일 전송 코드
   let transporter = nodemailer.createTransport({
     service: "Gmail",
     auth: {
@@ -175,8 +192,14 @@ router.post("/emailAuth", async (req, res) => {
 router.post("/emailAuth/check", async (req, res) => {
   let userNum = req.body.authNum;
 
+  const token = req.session.auth;
+
   try {
-    if (number === userNum) {
+    if (!token) return res.status(200).json({ auth: false });
+
+    const decoded = jwt.verify(token, process.env.JWT_SECRET_AUTH);
+
+    if (decoded === userNum) {
       res.status(200).json({ auth: true });
     } else {
       res.status(200).json({ auth: false });
