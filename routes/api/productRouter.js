@@ -4,7 +4,19 @@ const router = express.Router();
 const getId = require("../../middleware/getId");
 
 router.get("/", async (req, res) => {
-  const { page = 1, pageSize = 25, id, name, color, price, model, category, size, all, mainCategory } = req.query;
+  const {
+    page = 1,
+    pageSize = 25,
+    id,
+    name,
+    color,
+    price,
+    model,
+    category,
+    size,
+    all,
+    mainCategory,
+  } = req.query;
   const skipCount = (page - 1) * pageSize;
   const query = {};
 
@@ -57,7 +69,9 @@ router.get("/", async (req, res) => {
 router.post("/", async (req, res) => {
   const model = await Product.findOne({ model: req.body.model });
   if (model) {
-    return res.status(400).json({ errors: [{ msg: "Product already exists" }] });
+    return res
+      .status(400)
+      .json({ errors: [{ msg: "Product already exists" }] });
   }
   const product = new Product({
     id: req.body.id,
@@ -77,25 +91,23 @@ router.post("/", async (req, res) => {
   }
 });
 
+// 사이즈 수량 1~10 랜덤 업데이트.
 router.post("/update-data", async (req, res) => {
-  const { name, mainCategory, category } = req.query;
-  const query = {};
-  if (name) query.name = { $regex: name };
-  if (category) query.category = { $regex: category };
+  const { name, model } = req.query;
   try {
-    const products = await Product.find(query);
-    for (const item of products) {
-      item.mainCategory = [...item.mainCategory, "Authentic"];
-      await item.save();
+    const products = await Product.find();
+
+    for (const product of products) {
+      const { model, size } = product;
+      for (const key in size) {
+        size[key] = Math.trunc(Math.random() * 10 + 1);
+      }
+      await Product.updateOne({ model: model }, { $set: { size: size } });
     }
-    res.json({
-      total: products.length,
-      products: products,
-    });
+
+    res.status(200).json({ total: products.length, product: products });
   } catch (err) {
-    console.error(err);
-  } finally {
-    res.end();
+    res.status(401).send("서버 오류, 업데이트 실패");
   }
 });
 
@@ -103,7 +115,10 @@ router.post("/update-date", async (req, res) => {
   const oneDayAgo = new Date();
   oneDayAgo.setDate(oneDayAgo.getDate() - 40);
   try {
-    const products = await Product.find({ date: { $gt: oneDayAgo }, mainCategory: { $regex: "CLOTHES" } });
+    const products = await Product.find({
+      date: { $gt: oneDayAgo },
+      mainCategory: { $regex: "CLOTHES" },
+    });
     for (const item of products) {
       item.mainCategory.push("NEW");
       await item.save();
