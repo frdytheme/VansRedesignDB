@@ -23,8 +23,7 @@ router.use(
 
 // 로그인 라우터
 router.post("/login", async (req, res) => {
-  const { name, password } = req.body;
-
+  const { name, password, cart } = req.body;
   try {
     // user_id가 존재하는 지 확인
     let user = await User.findOne({ name });
@@ -75,9 +74,17 @@ router.post("/login", async (req, res) => {
     });
 
     user.refresh = refreshToken;
+
+    // 카트 정보 반영
+
+    // 기존 유저 데이터에 카트가 비었으면 비로그인 상태 카트 데이터 업데이트
+    if (!user.cart.total) {
+      user.cart = { data: cart.data, total: cart.total };
+    }
+
     await user.save();
 
-    res.json({ message: "로그인 완료" });
+    res.json({ message: "로그인 완료", cart: user.cart });
   } catch (err) {
     res.status(401).send("사용자 인증 실패");
   }
@@ -220,6 +227,21 @@ router.post("/logout", async (req, res) => {
     res.status(200).send("로그아웃 성공");
   } catch (err) {
     res.status(500).send("로그아웃 실패");
+  }
+});
+
+// 카트 업데이트 라우터
+router.patch("/cartUpdate", async (req, res) => {
+  const { list } = req.body;
+  const refresh = req.cookies.refresh_token;
+  const decoded = jwt.verify(refresh, process.env.JWT_SECRET_REFRESH);
+  const user = await User.findOne({ _id: decoded.user.id });
+  user.cart = { data: list.data, total: list.total };
+  await user.save();
+  try {
+    res.status(200).json("Cart Data Update Success");
+  } catch (err) {
+    res.status(401).json(err);
   }
 });
 

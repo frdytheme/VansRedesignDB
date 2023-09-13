@@ -19,6 +19,10 @@ const userSchema = mongoose.Schema({
   refresh: {
     type: String,
   },
+  cart: {
+    type: Object,
+    default: { data: {}, total: 0 },
+  },
 });
 
 const User = mongoose.model("User", userSchema);
