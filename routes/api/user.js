@@ -17,6 +17,7 @@ router.use(
     saveUninitialized: true,
     cookie: {
       maxAge: 120000,
+      sameSite: "none",
     },
   })
 );
@@ -54,7 +55,6 @@ router.post("/login", async (req, res) => {
     res.cookie("access_token", accessToken, {
       httpOnly: true,
       sameSite: "none",
-      domain: "localhost",
       path: "/",
       secure: true,
       maxAge: 15 * 60 * 1000,
@@ -67,7 +67,6 @@ router.post("/login", async (req, res) => {
     res.cookie("refresh_token", refreshToken, {
       httpOnly: true,
       sameSite: "none",
-      domain: "localhost",
       path: "/",
       secure: true,
       maxAge: 14 * 24 * 60 * 60 * 1000,
