@@ -8,11 +8,11 @@ require('dotenv').config();
 
 //express 사용
 const app = express();
-const port = process.env;
+const port = process.env.PORT;
 
 app.use(
   cors({
-    origin: "http://localhost:3000", // 허용할 도메인 주소
+    origin: "https://frdytheme.github.io", // 허용할 도메인 주소
     credentials: true, // 쿠키 전달을 허용
   })
 );
