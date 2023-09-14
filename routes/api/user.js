@@ -191,7 +191,7 @@ router.post("/emailAuth", async (req, res) => {
     await transporter.sendMail(mailOptions);
     res.status(200).send("인증 메일 전송 성공");
   } catch (err) {
-    res.status(401).send("서버 오류");
+    res.status(401).send(err);
   }
 });
 
