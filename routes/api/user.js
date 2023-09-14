@@ -18,6 +18,7 @@ router.use(
     cookie: {
       maxAge: 120000,
       sameSite: "none",
+      secure: true,
     },
   })
 );
