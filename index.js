@@ -4,9 +4,11 @@ const connectDB = require("./db");
 const cors = require("cors");
 const cookieParser = require("cookie-parser");
 
+require('dotenv').config();
+
 //express 사용
 const app = express();
-const port = 5000;
+const port = process.env.PORT;
 
 app.use(
   cors({
