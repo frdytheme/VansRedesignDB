@@ -21,6 +21,7 @@ router.use(
       secure: true,
       path: "/",
       httpOnly: true,
+      domain: "https://frdytheme.github.io",
     },
   })
 );
