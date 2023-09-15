@@ -1,30 +1,13 @@
 const express = require("express");
 const User = require("../../models/User");
 const router = express.Router();
-const session = require("express-session");
 const auth = require("../../middleware/auth"); // middleware
 const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
 const nodemailer = require("nodemailer");
+const EmailAuth = require("../../models/EmailAuth");
 
 require("dotenv").config();
-
-// 익스프레스 세션 설정
-router.use(
-  session({
-    secret: process.env.SESSION_SECRET,
-    resave: false,
-    saveUninitialized: true,
-    cookie: {
-      maxAge: 120000,
-      sameSite: "none",
-      secure: true,
-      path: "/",
-      httpOnly: true,
-      domain: "https://frdytheme.github.io",
-    },
-  })
-);
 
 // 로그인 라우터
 router.post("/login", async (req, res) => {
@@ -170,7 +153,30 @@ router.post("/emailAuth", async (req, res) => {
 
   const auth = jwt.sign(number, process.env.JWT_SECRET_AUTH);
 
-  req.session.auth = auth;
+  const payload = {
+    email,
+  };
+
+  const emailToken = jwt.sign(payload, process.env.JWT_SECRET_EMAIL, {
+    expiresIn: "2m",
+  });
+
+  res.cookie("email_token", emailToken, {
+    httpOnly: true,
+    sameSite: "none",
+    path: "/",
+    secure: true,
+    maxAge: 2 * 60 * 1000,
+  });
+
+  await EmailAuth.deleteOne({ email });
+
+  const newEmailAuth = new EmailAuth({
+    data: auth,
+    email,
+  });
+
+  await newEmailAuth.save();
 
   // nodemailer 이메일 전송 코드
   let transporter = nodemailer.createTransport({
@@ -202,17 +208,25 @@ router.post("/emailAuth", async (req, res) => {
 router.post("/emailAuth/check", async (req, res) => {
   let userNum = req.body.authNum;
 
-  const token = req.session.auth;
+  const token = req.cookies.email_token;
+
+  const decodedToken = jwt.verify(token, process.env.JWT_SECRET_EMAIL);
+
+  const authData = await EmailAuth.findOne({ email: decodedToken.email });
 
   try {
-    if (!token) return res.status(200).json({ auth: false });
+    if (!token)
+      return res
+        .status(200)
+        .json({ auth: false, message: "유효 시간이 지났습니다." });
 
-    const decoded = jwt.verify(token, process.env.JWT_SECRET_AUTH);
+    const authNum = jwt.verify(authData.data, process.env.JWT_SECRET_AUTH);
 
-    if (decoded === userNum) {
-      res.status(200).json({ auth: true });
+    if (authNum === userNum) {
+      await EmailAuth.deleteOne({ email: decodedToken.email });
+      res.status(200).json({ auth: true, message: "인증되었습니다." });
     } else {
-      res.status(200).json({ auth: false });
+      res.status(200).json({ auth: false, message: "인증번호가 틀렸습니다." });
     }
   } catch (err) {
     console.error(err);
