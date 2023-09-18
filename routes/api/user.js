@@ -80,9 +80,7 @@ router.post("/login", async (req, res) => {
 router.post("/auth", auth, async (req, res) => {
   try {
     // auth 미들웨어에서 생성해준 req.user를 사용하여 DB에서 user 탐색. 패스워드에 대한 내용은 제외합니다.
-    const user = await User.findById(req.user.id).select(
-      "-password -refresh -_id"
-    );
+    const user = await User.findById(req.user.id).select("-password -refresh");
 
     if (!user) {
       return res.status(404).json({ message: "해당 유저를 찾을 수 없습니다." });
@@ -148,6 +146,10 @@ router.post("/idCheck", async (req, res) => {
 // 이메일 인증 라우터
 router.post("/emailAuth", async (req, res) => {
   const { email } = req.body;
+
+  let user = await User.findOne({ email });
+  if (user)
+    return res.status(400).json({ message: "가입된 이메일이 있습니다." });
 
   let number = Math.floor(Math.random() * 900000 + 100000);
 
@@ -259,6 +261,183 @@ router.patch("/cartUpdate", async (req, res) => {
     res.status(200).json("Cart Data Update Success");
   } catch (err) {
     res.status(401).json(err);
+  }
+});
+
+// id찾기 이메일 전송 라우터
+router.post("/findId", async (req, res) => {
+  const { email } = req.body;
+
+  let user = await User.findOne({ email });
+  if (!user)
+    return res.status(400).json({ message: "가입된 이메일이 없습니다." });
+
+  let number = Math.floor(Math.random() * 900000 + 100000);
+
+  const auth = jwt.sign(number, process.env.JWT_SECRET_AUTH);
+
+  const payload = {
+    email,
+  };
+
+  const emailToken = jwt.sign(payload, process.env.JWT_SECRET_EMAIL, {
+    expiresIn: "2m",
+  });
+
+  res.cookie("email_token", emailToken, {
+    httpOnly: true,
+    sameSite: "none",
+    path: "/",
+    secure: true,
+    maxAge: 2 * 60 * 1000,
+  });
+
+  await EmailAuth.deleteOne({ email });
+
+  const newEmailAuth = new EmailAuth({
+    data: auth,
+    email,
+  });
+
+  await newEmailAuth.save();
+
+  // nodemailer 이메일 전송 코드
+  let transporter = nodemailer.createTransport({
+    service: "Gmail",
+    auth: {
+      type: "OAuth2",
+      user: process.env.GMAIL_OAUTH_USER,
+      clientId: process.env.GMAIL_OAUTH_CLIENT_ID,
+      clientSecret: process.env.GMAIL_OAUTH_CLIENT_SECRET,
+      refreshToken: process.env.GMAIL_OAUTH_REFRESH_TOKEN,
+    },
+  });
+
+  const mailOptions = {
+    to: email,
+    subject: "반스(VANS) 리디자인 홈페이지(by FRDY) 아이디찾기 인증번호",
+    text: `인증번호는 \"${number}\" 입니다`,
+  };
+
+  try {
+    await transporter.sendMail(mailOptions);
+    res.status(200).send("인증 메일 전송 성공");
+  } catch (err) {
+    res.status(401).send(err);
+  }
+});
+
+// id찾기 라우터
+router.post("/findId/confirm", async (req, res) => {
+  const { email } = req.body;
+  try {
+    let user = await User.findOne({ email });
+    res.status(200).send(user.name);
+  } catch (err) {
+    res.status(401).send(err);
+  }
+});
+
+// pw찾기 이메일 전송 라우터
+router.post("/findPw", async (req, res) => {
+  const { email, name } = req.body;
+
+  let user = await User.findOne({ email, name });
+  if (!user)
+    return res.status(400).json({ message: "유저 정보를 찾을 수 없습니다." });
+
+  let number = Math.floor(Math.random() * 900000 + 100000);
+
+  const auth = jwt.sign(number, process.env.JWT_SECRET_AUTH);
+
+  const payload = {
+    email,
+  };
+
+  const emailToken = jwt.sign(payload, process.env.JWT_SECRET_EMAIL, {
+    expiresIn: "2m",
+  });
+
+  res.cookie("email_token", emailToken, {
+    httpOnly: true,
+    sameSite: "none",
+    path: "/",
+    secure: true,
+    maxAge: 2 * 60 * 1000,
+  });
+
+  await EmailAuth.deleteOne({ email });
+
+  const newEmailAuth = new EmailAuth({
+    data: auth,
+    email,
+  });
+
+  await newEmailAuth.save();
+
+  // nodemailer 이메일 전송 코드
+  let transporter = nodemailer.createTransport({
+    service: "Gmail",
+    auth: {
+      type: "OAuth2",
+      user: process.env.GMAIL_OAUTH_USER,
+      clientId: process.env.GMAIL_OAUTH_CLIENT_ID,
+      clientSecret: process.env.GMAIL_OAUTH_CLIENT_SECRET,
+      refreshToken: process.env.GMAIL_OAUTH_REFRESH_TOKEN,
+    },
+  });
+
+  const mailOptions = {
+    to: email,
+    subject: "반스(VANS) 리디자인 홈페이지(by FRDY) 아이디찾기 인증번호",
+    text: `${user.name}님의 인증번호는 \"${number}\" 입니다`,
+  };
+
+  try {
+    await transporter.sendMail(mailOptions);
+    res.status(200).send("인증 메일 전송 성공");
+  } catch (err) {
+    res.status(401).send(err);
+  }
+});
+
+// pw찾기 라우터
+router.patch("/findPw/changePw", async (req, res) => {
+  const { name, email, pw } = req.body;
+  try {
+    let user = await User.findOne({ name, email });
+
+    const nowPw = await bcrypt.compare(pw, user.password);
+
+    if (nowPw)
+      return res.status(200).send({
+        message:
+          "비밀번호가 현재와 동일합니다 \n새로운 비밀번호를 입력해주세요.",
+        isOk: false,
+      });
+
+    const salt = await bcrypt.genSalt(10);
+    user.password = await bcrypt.hash(pw, salt);
+    await user.save();
+
+    res.status(200).send({ message: "비밀번호 변경 완료", isOk: true });
+  } catch (err) {
+    res.status(401).send(err);
+  }
+});
+
+// 회원탈퇴 라우터
+router.delete("/:id", async (req, res) => {
+  try {
+    let user;
+    user = await User.findById(req.params.id);
+    if (user == null) {
+      return res.status(404).json({ message: "아이디를 찾을 수 없습니다." });
+    }
+    await user.deleteOne();
+    res.json({ message: `${user.name}정보가 DB에서 삭제됐습니다.` });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
   }
 });
 
