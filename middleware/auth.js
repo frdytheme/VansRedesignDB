@@ -8,19 +8,17 @@ module.exports = async function (req, res, next) {
   try {
     let accessToken = req.cookies.access_token;
     let refreshToken = req.cookies.refresh_token;
-    const { name, password } = req.body;
+    const { name } = req.body;
 
     const user = await User.findOne({ name: name });
-
-    const checkPw = await bcrypt.compare(password, user.password);
-
-    if (!checkPw) return res.status(401).json({err: "비밀번호가 틀렸습니다.", state: "wrong"});
 
     // 리프레시 토큰이 없으면 로그인 만료 리턴.
     if (!refreshToken) {
       await User.updateOne({ name: name }, { $unset: { refresh: 1 } });
       res.clearCookie("access_token");
-      return res.json({ err: "로그인 정보 만료", state: "expired" });
+      return res
+        .status(404)
+        .json({ msg: "로그인 정보 만료", state: "expired" });
     }
     // 액세스 토큰이 없으면, 유저가 db에 리프레시 토큰을 갖고 있는 지 확인.
     if (!accessToken) {
@@ -76,6 +74,6 @@ module.exports = async function (req, res, next) {
     // 미들웨어에서 많이 사용하는 메서드로 현재에서 판단하지 않고 라우터로 넘기겠다는 의미.
     next();
   } catch (error) {
-    res.status(401).json({ msg: "Token is not valid" });
+    res.status(401).json({ msg: "Token is not valid", state: "expired" });
   }
 };

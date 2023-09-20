@@ -80,16 +80,20 @@ router.post("/login", async (req, res) => {
 router.post("/auth", auth, async (req, res) => {
   try {
     // auth 미들웨어에서 생성해준 req.user를 사용하여 DB에서 user 탐색. 패스워드에 대한 내용은 제외합니다.
-    const user = await User.findById(req.user.id).select("-password -refresh");
+    const user = await User.findById(req.user.id).select(
+      "-password -refresh -_id"
+    );
 
     if (!user) {
-      return res.status(404).json({ message: "해당 유저를 찾을 수 없습니다." });
+      return res
+        .status(404)
+        .json({ msg: "해당 유저를 찾을 수 없습니다.", state: "expired" });
     }
 
     res.status(200).json({ user }); // 응답에 패스워드 정보를 제외한 사용자 정보 넣기
   } catch (err) {
     console.error(err.message);
-    res.status(500).send("서버 오류 발생");
+    res.status(500).send({ msg: "서버 오류 발생", state: "expired" });
   }
 });
 
@@ -427,17 +431,24 @@ router.patch("/findPw/changePw", async (req, res) => {
 });
 
 // 회원탈퇴 라우터
-router.delete("/:id", async (req, res) => {
+router.post("/deleteUser", async (req, res) => {
+  const { password, name } = req.body;
   try {
-    let user;
-    user = await User.findById(req.params.id);
-    if (user == null) {
+    const user = await User.findOne({ name });
+
+    if (!user) {
       return res.status(404).json({ message: "아이디를 찾을 수 없습니다." });
     }
-    await user.deleteOne();
-    res.json({ message: `${user.name}정보가 DB에서 삭제됐습니다.` });
+
+    const compare = await bcrypt.compare(password, user.password);
+    if (compare) {
+      await user.deleteOne();
+      res.status(200).json({ message: `${name}정보가 DB에서 삭제됐습니다.` });
+    } else {
+      res.status(404).json({ message: "비밀번호가 틀렸습니다." });
+    }
   } catch (error) {
-    res.status(500).json({ error: error.message });
+    res.status(500).json({ message: error });
   }
 });
 
