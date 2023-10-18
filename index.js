@@ -13,7 +13,6 @@ const port = process.env.PORT;
 app.use(
   cors({
     origin: "https://frdytheme.github.io", // 허용할 도메인 주소
-    // origin: "http://localhost:3000", // 허용할 도메인 주소
     credentials: true, // 쿠키 전달을 허용
   })
 );
